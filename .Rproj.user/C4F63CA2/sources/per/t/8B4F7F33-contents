@@ -1,0 +1,85 @@
+library(tidymodels)
+library(readr)
+source("src/validate.R")
+
+set.seed(66)
+
+# Load iris dataset (like UCI)
+df <- read_csv("data/iris-processed.csv")
+
+validate_original_schema(df)
+
+df_features <- create_features(df)
+validate_feature_schema(df_features)
+
+df_features$class <- as.factor(df_features$class)
+
+split <- initial_split(df_features, prop = 0.8)
+train_data <- training(split)
+test_data  <- testing(split)
+
+# Recipe (scaling equivalent to StandardScaler)
+rec <- recipe(class ~ ., data = train_data) %>%
+  step_normalize(all_predictors())
+
+# MODELS
+
+lr_model <- logistic_reg() %>%
+  set_engine("glm")
+
+rf_model <- rand_forest(
+  trees = tune(),
+  mtry = tune(),
+  min_n = tune()
+) %>%
+  set_engine("ranger") %>%
+  set_mode("classification")
+
+dt_model <- decision_tree(
+  cost_complexity = tune(),
+  tree_depth = tune(),
+  min_n = tune()
+) %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+nb_model <- naive_Bayes() %>%
+  set_engine("klaR") %>%
+  set_mode("classification")
+
+# Workflow example (Random Forest tuning)
+rf_workflow <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(rf_model)
+
+cv_folds <- vfold_cv(train_data, v = 5)
+
+rf_tuned <- tune_grid(
+  rf_workflow,
+  resamples = cv_folds,
+  grid = 10,
+  metrics = metric_set(accuracy, recall, precision, roc_auc)
+)
+
+best_rf <- select_best(rf_tuned, metric = "recall")
+
+final_rf <- finalize_workflow(rf_workflow, best_rf) %>%
+  fit(train_data)
+
+# Evaluate
+rf_predictions <- predict(final_rf, test_data) %>%
+  bind_cols(test_data)
+
+rf_metrics <- metric_set(accuracy, recall, precision)(
+  rf_predictions,
+  truth = class,
+  estimate = .pred_class
+)
+
+print(rf_metrics)
+
+# Save model
+dir.create("artifacts", showWarnings = FALSE)
+saveRDS(final_rf, "artifacts/model.rds")
+
+

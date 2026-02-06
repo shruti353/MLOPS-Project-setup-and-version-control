@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/1392529/2eed4f9b3c10465c9a32596c974ed812
+bundleId: https://api.rpubs.com/api/v1/document/1392529/2eed4f9b3c10465c9a32596c974ed812
+url: http://rpubs.com/shruti72/1392529
+version: 1

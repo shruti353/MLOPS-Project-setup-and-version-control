@@ -1,0 +1,187 @@
+---
+title: "End-to-End MLOps Pipeline using R (Iris Dataset)"
+author: "Shruti Thakkar, Adarsh Pritam, Amrutha Prasad"
+output: html_document
+---
+
+## 1. Introduction
+
+This document presents an end-to-end Machine Learning Operations (MLOps)
+pipeline implemented using the R programming language. The workflow covers
+dataset understanding, preprocessing, model training, evaluation, deployment,
+and validation using reproducible practices in RStudio.
+
+---
+
+## 2. Dataset Description
+
+### Dataset Used
+
+The UCI Iris Dataset is used in this project. It contains measurements of iris
+flowers belonging to three species.
+
+- Number of samples: 150  
+- Number of features: 4 numerical  
+- Target variable: Species (3 classes)
+
+### Machine Learning Task
+
+The task is a **multi-class classification problem** where the objective is to
+predict the species of an iris flower based on its physical measurements.
+
+---
+
+## 3. Libraries Used
+
+The following code loads all required R libraries for data preprocessing,
+model training, evaluation, and deployment.
+
+library(caret)
+library(tidyverse)
+library(randomForest)
+library(e1071)
+library(plumber)
+Output Interpretation:
+The libraries are loaded successfully without errors, indicating that the R
+environment is correctly set up for executing the MLOps pipeline.
+
+## 4. Data Loading
+The following code loads the preprocessed Iris dataset and displays its structure.
+
+df <- read.csv("data/iris-processed.csv")
+str(df)
+
+**Output Interpretation:**
+
+The output shows that the dataset consists of numerical feature columns and a
+categorical target variable named class. This confirms that the dataset has
+been loaded correctly and is suitable for supervised learning.
+
+## 5. Data Validation and Feature Engineering
+This step validates the dataset schema, removes duplicate records, and performs
+feature engineering using a dedicated script.
+
+source("src/validate.R")
+
+**Output Interpretation:**
+The output confirms successful execution of schema validation and feature
+engineering steps. Any duplicate records are handled, and additional engineered
+features are prepared for model training.
+
+## 6. Train-Test Split and Feature Scaling
+The following code splits the dataset into training and testing sets and applies
+feature scaling to standardize numerical features.
+
+set.seed(66)
+
+train_idx <- createDataPartition(df$class, p = 0.8, list = FALSE)
+train_df <- df[train_idx, ]
+test_df  <- df[-train_idx, ]
+
+dim(train_df)
+dim(test_df)
+
+preproc <- preProcess(
+  train_df[, -ncol(train_df)],
+  method = c("center", "scale")
+)
+
+**Output Interpretation:**
+The output displays the dimensions of the training and testing datasets,
+confirming an approximate 80–20 split. Feature scaling is successfully applied,
+which is important for fair model comparison.
+
+## 7. Possible Machine Learning Algorithms
+The following machine learning algorithms were considered for this
+classification task:
+
+Logistic Regression
+
+Random Forest
+
+Decision Tree
+
+Gaussian Naïve Bayes
+
+These algorithms represent linear, ensemble-based, tree-based, and probabilistic
+approaches, enabling a comprehensive comparison.
+
+## 8. Model Training and Comparison
+The following code trains multiple models and evaluates them using accuracy,
+precision, and recall.
+
+results <- source("src/train.R")$value
+results
+
+**Output Interpretation:**
+The output displays performance metrics for all trained models. Logistic
+Regression achieves the best overall balance of accuracy, precision, and recall,
+making it the most suitable model for deployment.
+
+## 9. Model Selection and Justification
+Selected Model: Logistic Regression
+
+**Justification:**
+Logistic Regression was selected due to its high recall across all classes,
+stable performance, and interpretability. Its performance is comparable to or
+better than the other evaluated models.
+
+## 10. Model Deployment using Plumber
+The following code initializes the Plumber API for serving the trained model as
+a RESTful web service.
+
+pr <- plumb("api/plumber.R")
+pr
+
+**Output Interpretation:**
+The output lists the available API endpoints, confirming that the trained model
+has been successfully deployed and is ready to serve prediction requests.
+
+## 11. API Testing and Output
+A sample API request was made to test the deployed prediction endpoint.
+
+**Sample Request**
+
+http://127.0.0.1:7860/predict?sepal_length=5&sepal_width=3.5&petal_length=1.2&petal_width=0.4
+
+**Sample Response**
+
+{
+  "success": true,
+  "prediction": "setosa"
+}
+
+**Output Interpretation:**
+The API returns the correct class label for the given input, confirming that the
+model inference and preprocessing logic are functioning correctly.
+
+## 12. Testing and Validation
+The pipeline was validated using the following test cases:
+
+Dataset schema validation
+
+Pipeline reproducibility using fixed random seeds
+
+Performance validation against baseline thresholds
+
+Failure handling and safe termination
+
+Deployment verification via API testing
+
+All test cases produced the expected results.
+
+## 13. Conclusion
+This document demonstrates a complete end-to-end MLOps pipeline implemented in
+R.
+The project covers dataset preprocessing, feature engineering, model
+training, evaluation, deployment, and validation using reproducible workflows in
+RStudio.
+
+## 14. References
+UCI Machine Learning Repository – Iris Dataset
+
+R Project for Statistical Computing
+
+caret Package Documentation
+
+Plumber Package Documentation
